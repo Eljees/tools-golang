@@ -115,3 +115,27 @@ func TestInvalidDocumentFailsValidation(t *testing.T) {
 		t.Fatalf("expected non-nil error, got nil")
 	}
 }
+
+func TestDocumentWithoutIdentifierFailsValidation(t *testing.T) {
+	// a document that does not declare its own SPDXID cannot be referenced by a relationship
+	doc := &spdx.Document{
+		SPDXVersion:  spdx.Version,
+		DataLicense:  spdx.DataLicense,
+		CreationInfo: &spdx.CreationInfo{},
+		Packages: []*spdx.Package{
+			{PackageName: "pkg1", PackageSPDXIdentifier: "p1"},
+		},
+		Relationships: []*spdx.Relationship{
+			{
+				RefA:         common.MakeDocElementID("", "DOCUMENT"),
+				RefB:         common.MakeDocElementID("", "p1"),
+				Relationship: "DESCRIBES",
+			},
+		},
+	}
+
+	err := ValidateDocument(doc)
+	if err == nil {
+		t.Errorf("expected non-nil error, got nil")
+	}
+}

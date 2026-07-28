@@ -22,8 +22,11 @@ func ValidateDocument(doc *spdx.Document) error {
 		validElementIDs[unpackagedFile.FileSPDXIdentifier] = true
 	}
 
-	// add the Document element ID
-	validElementIDs[common.MakeDocElementID("", "DOCUMENT").ElementRefID] = true
+	// add the Document element ID, but only if the document actually declares one;
+	// a document without an SPDXID cannot be the subject of a relationship
+	if doc.SPDXIdentifier != "" {
+		validElementIDs[doc.SPDXIdentifier] = true
+	}
 
 	for _, relationship := range doc.Relationships {
 		if !validElementIDs[relationship.RefA.ElementRefID] {
