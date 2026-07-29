@@ -137,28 +137,19 @@ func TestDocumentWithoutIdentifierFailsValidation(t *testing.T) {
 	}
 }
 
-func TestDocumentRefResolvesIndependentlyOfIdentifierField(t *testing.T) {
-	// SPDXRef-DOCUMENT is a fixed identifier for the current document: it is a valid
-	// relationship target even when the document's own SPDXID field holds something else
+func TestDocumentWithNonReservedIdentifierFailsValidation(t *testing.T) {
 	doc := &spdx.Document{
 		SPDXVersion:    spdx.Version,
 		DataLicense:    spdx.DataLicense,
 		SPDXIdentifier: common.ElementID("some-other-id"),
 		CreationInfo:   &spdx.CreationInfo{},
-		Packages: []*spdx.Package{
-			{PackageName: "pkg1", PackageSPDXIdentifier: "p1"},
-		},
-		Relationships: []*spdx.Relationship{
-			{
-				RefA:         common.MakeDocElementID("", "DOCUMENT"),
-				RefB:         common.MakeDocElementID("", "p1"),
-				Relationship: "DESCRIBES",
-			},
-		},
 	}
 
 	err := ValidateDocument(doc)
-	if err != nil {
-		t.Fatalf("expected nil error, got: %s", err.Error())
+	if err == nil {
+		t.Fatalf("expected non-nil error, got nil")
+	}
+	if !strings.Contains(err.Error(), "DOCUMENT") {
+		t.Errorf("expected error about the reserved document identifier, got: %s", err.Error())
 	}
 }

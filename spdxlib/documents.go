@@ -12,10 +12,11 @@ import (
 // Currently, this verifies that the Document declares the mandatory SPDX identifier field, and that all
 // Element IDs mentioned in Relationships exist in the Document as either a Package or an UnpackagedFile.
 func ValidateDocument(doc *spdx.Document) error {
-	// the SPDX identifier field is mandatory:
+	// SPDXRef-DOCUMENT is the mandatory identifier for the current document:
 	// https://spdx.github.io/spdx-spec/v2.3/document-creation-information/#63-spdx-identifier-field
-	if doc.SPDXIdentifier == "" {
-		return fmt.Errorf("document does not have an SPDX identifier")
+	documentID := common.ElementID("DOCUMENT")
+	if doc.SPDXIdentifier != documentID {
+		return fmt.Errorf("document SPDX identifier must be %s", documentID)
 	}
 
 	// cache a map of package IDs for quick lookups
@@ -28,9 +29,8 @@ func ValidateDocument(doc *spdx.Document) error {
 		validElementIDs[unpackagedFile.FileSPDXIdentifier] = true
 	}
 
-	// SPDXRef-DOCUMENT is a fixed identifier for the current document, so it is always a valid
-	// relationship target, independent of the value carried in the document's own SPDXID field
-	validElementIDs[common.MakeDocElementID("", "DOCUMENT").ElementRefID] = true
+	// SPDXRef-DOCUMENT is the fixed relationship identifier for the current document.
+	validElementIDs[documentID] = true
 
 	for _, relationship := range doc.Relationships {
 		if !validElementIDs[relationship.RefA.ElementRefID] {
