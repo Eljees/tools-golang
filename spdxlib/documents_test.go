@@ -3,6 +3,7 @@
 package spdxlib
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/spdx/tools-golang/spdx"
@@ -117,11 +118,33 @@ func TestInvalidDocumentFailsValidation(t *testing.T) {
 }
 
 func TestDocumentWithoutIdentifierFailsValidation(t *testing.T) {
-	// a document that does not declare its own SPDXID cannot be referenced by a relationship
+	// the SPDX identifier field is mandatory, and ValidateDocument did not check for it
 	doc := &spdx.Document{
 		SPDXVersion:  spdx.Version,
 		DataLicense:  spdx.DataLicense,
 		CreationInfo: &spdx.CreationInfo{},
+		Packages: []*spdx.Package{
+			{PackageName: "pkg1", PackageSPDXIdentifier: "p1"},
+		},
+	}
+
+	err := ValidateDocument(doc)
+	if err == nil {
+		t.Fatalf("expected non-nil error, got nil")
+	}
+	if !strings.Contains(err.Error(), "SPDX identifier") {
+		t.Errorf("expected error about the missing SPDX identifier, got: %s", err.Error())
+	}
+}
+
+func TestDocumentRefResolvesIndependentlyOfIdentifierField(t *testing.T) {
+	// SPDXRef-DOCUMENT is a fixed identifier for the current document: it is a valid
+	// relationship target even when the document's own SPDXID field holds something else
+	doc := &spdx.Document{
+		SPDXVersion:    spdx.Version,
+		DataLicense:    spdx.DataLicense,
+		SPDXIdentifier: common.ElementID("some-other-id"),
+		CreationInfo:   &spdx.CreationInfo{},
 		Packages: []*spdx.Package{
 			{PackageName: "pkg1", PackageSPDXIdentifier: "p1"},
 		},
@@ -135,7 +158,7 @@ func TestDocumentWithoutIdentifierFailsValidation(t *testing.T) {
 	}
 
 	err := ValidateDocument(doc)
-	if err == nil {
-		t.Errorf("expected non-nil error, got nil")
+	if err != nil {
+		t.Fatalf("expected nil error, got: %s", err.Error())
 	}
 }
